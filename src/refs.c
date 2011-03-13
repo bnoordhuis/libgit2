@@ -508,21 +508,18 @@ static int packed_load(git_repository *repo)
 	buffer_end = (const char *)(buffer_start) + packfile.len;
 
 	/* Does the header look like valid? */
-	if (git__prefixcmp((const char *)(buffer_start), GIT_PACKEDREFS_HEADER)) {
-		error = GIT_EPACKEDREFSCORRUPTED;
-		goto cleanup;
-	}
+	if (git__prefixcmp((const char *)(buffer_start), GIT_PACKEDREFS_HEADER) == 0) {
+		/* Let's skip the header */
+		buffer_start += sizeof(GIT_PACKEDREFS_HEADER) - 1;
 
-	/* Let's skip the header */
-	buffer_start += strlen(GIT_PACKEDREFS_HEADER);
+		if (*buffer_start == '\r')
+			buffer_start++;
 
-	if (*buffer_start == '\r')
+		if (*buffer_start != '\n')
+			return GIT_EPACKEDREFSCORRUPTED;
+
 		buffer_start++;
-
-	if (*buffer_start != '\n')
-		return GIT_EPACKEDREFSCORRUPTED;
-
-	buffer_start++;
+	}
 
 	while (buffer_start < buffer_end) {
 		reference_oid *ref = NULL;
